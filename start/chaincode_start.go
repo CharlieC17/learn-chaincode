@@ -33,9 +33,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
-	else if err == nil {
-		fmt.Printf("Starting Simple chaincode...")
-	}
 }
 
 // Init resets all the things
