@@ -27,10 +27,14 @@ import (
 type SimpleChaincode struct {
 }
 
+// sets up the communication between this chaincode and the peer that deployed it!
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
+	}
+	else{
+		fmt.Printf("Starting Simple chaincode...")
 	}
 }
 
