@@ -84,8 +84,8 @@ func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []s
 	Value: Qty for the above unique combination
 	Date: Stored as a string in the format 'dd-mm-yyyy'
 	*/
-	if len(args) != 5 {
-		return nil, errors.New("Incorrect number of arguments for createtable method. Expecting 5")
+	if len(args) != 0 {
+		return nil, errors.New("Incorrect number of arguments for createtable method. Expecting zero args")
 	}
 
 	err := stub.CreateTable("InventoryHistory", []*shim.ColumnDefinition{
@@ -110,7 +110,7 @@ func (t *TablesChaincode) deleterow(stub shim.ChaincodeStubInterface, args []str
 	Date: Stored as a string in the format 'dd-mm-yyyy'
 	*/
 	if len(args) != 4 {
-		return nil, errors.New("Incorrect number of arguments for deleterow method. Expecting 5")
+		return nil, errors.New("Incorrect number of arguments for deleterow method. Expecting 4")
 	}
 
 	var columns []shim.Column
