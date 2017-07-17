@@ -21,27 +21,31 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-
-type TablesChaincode struct{
+type TablesChaincode struct {
 }
 
 // Init method will be called during deployment.
-func (t *TablesChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error){
+func (t *TablesChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
-	}	
+	}
 	return nil, nil
 }
 
 // this method inserts rows to the table
 // 5 args expected (the column values)
-func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error){
-	
+func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
 	if function == "createtable" {
 		// Creates a table
 		return t.createtable(stub, args)
 	}
-	
+
+	if function == "deleterow" {
+		// Creates a table
+		return t.deleterow(stub, args)
+	}
+
 	if len(args) != 5 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 5")
 	}
@@ -57,7 +61,7 @@ func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	if errConv != nil {
 		fmt.Println("error converting string to int32")
 	}
-	
+
 	//fmt.Println("Inserting a record to the inventory history table: [%s],[%s],[%s],[%s],[%d]", itemid, orgcode, node, date, qty)
 	fmt.Println("Inserting a record to the inventory history table: ", itemid, orgcode, node, date, qty)
 
@@ -69,21 +73,25 @@ func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 			&shim.Column{Value: &shim.Column_String_{String_: date}},
 			&shim.Column{Value: &shim.Column_Int32{Int32: qty}}},
 	})
-	
+
 	if !ok && err == nil {
 		return nil, errors.New("The record already exists!")
 	}
-	
+
 	return nil, nil
 }
 
 // func to create the InventoryHistory table
-func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {	
+func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	/* Create table:
-		Keys: ItemId, OrgCode, Node, Date
-		Value: Qty for the above unique combination
-		Date: Stored as a string in the format 'ddmmyyyy'
+	Keys: ItemId, OrgCode, Node, Date
+	Value: Qty for the above unique combination
+	Date: Stored as a string in the format 'ddmmyyyy'
 	*/
+	if len(args) != 5 {
+		return nil, errors.New("Incorrect number of arguments for createtable method. Expecting 5")
+	}
+
 	err := stub.CreateTable("InventoryHistory", []*shim.ColumnDefinition{
 		&shim.ColumnDefinition{Name: "ItemId", Type: shim.ColumnDefinition_STRING, Key: true},
 		&shim.ColumnDefinition{Name: "OrgCode", Type: shim.ColumnDefinition_STRING, Key: true},
@@ -94,7 +102,44 @@ func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []s
 	if err != nil {
 		return nil, errors.New("Failed creating InventoryHistory table.")
 	}
-	
+
+	return nil, nil
+}
+
+// func to create the InventoryHistory table
+func (t *TablesChaincode) deleterow(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	/* Delete row:
+	Keys: ItemId, OrgCode, Node, Date
+	Value: Qty for the above unique combination
+	Date: Stored as a string in the format 'ddmmyyyy'
+	*/
+	if len(args) != 4 {
+		return nil, errors.New("Incorrect number of arguments for deleterow method. Expecting 5")
+	}
+
+	var columns []shim.Column
+
+	itemid := args[0]
+	orgcode := args[1]
+	node := args[2]
+	date := args[3]
+
+	col1 := shim.Column{Value: &shim.Column_String_{String_: itemid}}
+	col2 := shim.Column{Value: &shim.Column_String_{String_: orgcode}}
+	col3 := shim.Column{Value: &shim.Column_String_{String_: node}}
+	col4 := shim.Column{Value: &shim.Column_String_{String_: date}}
+
+	/* append the columns required to be searched to the key column array */
+	columns = append(columns, col1)
+	columns = append(columns, col2)
+	columns = append(columns, col3)
+	columns = append(columns, col4)
+
+	err := stub.DeleteRow("InventoryHistory", columns)
+	if err != nil {
+		return nil, errors.New("Failed creating InventoryHistory table.")
+	}
+
 	return nil, nil
 }
 
@@ -103,23 +148,44 @@ func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []s
 func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	var err error
 
-	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
-	}
-	
-	model := "InventoryHistory"
-
-	/* The expected args: The keys ItemId and OrgCode */
-	itemid := args[0]
-	orgcode := args[1]
-	
 	/* Preparing the key column array to query the table */
 	var columns []shim.Column
-	col1 := shim.Column{Value: &shim.Column_String_{String_: itemid}}
-	columns = append(columns, col1)
-	col2 := shim.Column{Value: &shim.Column_String_{String_: orgcode}}
-	columns = append(columns, col2)
-	
+
+	if function == "search_ItemOrg" && len(args) == 2 {
+		/* The expected args: The keys ItemId and OrgCode */
+		itemid := args[0]
+		orgcode := args[1]
+
+		col1 := shim.Column{Value: &shim.Column_String_{String_: itemid}}
+		col2 := shim.Column{Value: &shim.Column_String_{String_: orgcode}}
+
+		/* append the columns required to be searched to the key column array */
+		columns = append(columns, col1)
+		columns = append(columns, col2)
+	}
+
+	if function == "search_Item" && len(args) == 1 {
+		/* The expected args: The keys ItemId and OrgCode */
+		itemid := args[0]
+
+		col1 := shim.Column{Value: &shim.Column_String_{String_: itemid}}
+
+		/* append the columns required to be searched to the key column array */
+		columns = append(columns, col1)
+	}
+
+	if function == "search_Org" && len(args) == 1 {
+		/* The expected args: The keys ItemId and OrgCode */
+		orgcode := args[0]
+
+		col1 := shim.Column{Value: &shim.Column_String_{String_: orgcode}}
+
+		/* append the columns required to be searched to the key column array */
+		columns = append(columns, col1)
+	}
+
+	model := "InventoryHistory"
+
 	/* Create a buffered channel var to store the rows returned by the GetRows function */
 	var rowChannel <-chan shim.Row
 
@@ -128,7 +194,7 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var rows []*shim.Row
 	for {
 		select {
@@ -139,16 +205,16 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 				rows = append(rows, &row)
 			}
 		}
-		if rowChannel == nil{
+		if rowChannel == nil {
 			break
 		}
 	}
-	
+
 	// get length of the rows
 	var rowslen int
 	rowslen = len(rows)
 	fmt.Println("Length of the rows is: ", rowslen)
-		
+
 	// loop through to get all the rows and respective columns:
 	var outquery string
 	var rowscnt int
@@ -157,12 +223,12 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	for rowscnt < rowslen {
 		colscnt = 0
 		outquery = outquery + "["
-		for colscnt < 5	{
-			if colscnt == 4{
+		for colscnt < 5 {
+			if colscnt == 4 {
 				currqty := int(rows[rowscnt].Columns[4].GetInt32())
 				outquery = outquery + strconv.Itoa(currqty)
 				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[4].GetInt32())
-			} else{
+			} else {
 				outquery = outquery + rows[rowscnt].Columns[colscnt].GetString_() + ","
 				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[colscnt].GetString_())
 			}
@@ -172,7 +238,6 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		rowscnt = rowscnt + 1
 	}
 	return []byte(fmt.Sprintf("Inventory history: {%s}", outquery)), nil
-	//return nil, nil
 }
 
 func main() {
