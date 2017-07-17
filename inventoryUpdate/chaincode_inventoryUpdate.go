@@ -39,14 +39,10 @@ func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	if function == "createtable" {
 		// Creates a table
 		return t.createtable(stub, args)
-	}
-
-	if function == "deleterow" {
+	} else if function == "deleterow" {
 		// Creates a table
 		return t.deleterow(stub, args)
-	}
-
-	if len(args) != 5 {
+	} else if len(args) != 5 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 5")
 	}
 
@@ -86,7 +82,7 @@ func (t *TablesChaincode) createtable(stub shim.ChaincodeStubInterface, args []s
 	/* Create table:
 	Keys: ItemId, OrgCode, Node, Date
 	Value: Qty for the above unique combination
-	Date: Stored as a string in the format 'ddmmyyyy'
+	Date: Stored as a string in the format 'dd-mm-yyyy'
 	*/
 	if len(args) != 5 {
 		return nil, errors.New("Incorrect number of arguments for createtable method. Expecting 5")
@@ -111,7 +107,7 @@ func (t *TablesChaincode) deleterow(stub shim.ChaincodeStubInterface, args []str
 	/* Delete row:
 	Keys: ItemId, OrgCode, Node, Date
 	Value: Qty for the above unique combination
-	Date: Stored as a string in the format 'ddmmyyyy'
+	Date: Stored as a string in the format 'dd-mm-yyyy'
 	*/
 	if len(args) != 4 {
 		return nil, errors.New("Incorrect number of arguments for deleterow method. Expecting 5")
@@ -137,7 +133,7 @@ func (t *TablesChaincode) deleterow(stub shim.ChaincodeStubInterface, args []str
 
 	err := stub.DeleteRow("InventoryHistory", columns)
 	if err != nil {
-		return nil, errors.New("Failed creating InventoryHistory table.")
+		return nil, errors.New("Failed deleting a row from InventoryHistory table.")
 	}
 
 	return nil, nil
@@ -162,9 +158,7 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		/* append the columns required to be searched to the key column array */
 		columns = append(columns, col1)
 		columns = append(columns, col2)
-	}
-
-	if function == "search_Item" && len(args) == 1 {
+	} else if function == "search_Item" && len(args) == 1 {
 		/* The expected args: The keys ItemId and OrgCode */
 		itemid := args[0]
 
@@ -172,9 +166,7 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 		/* append the columns required to be searched to the key column array */
 		columns = append(columns, col1)
-	}
-
-	if function == "search_Org" && len(args) == 1 {
+	} else if function == "search_Org" && len(args) == 1 {
 		/* The expected args: The keys ItemId and OrgCode */
 		orgcode := args[0]
 
@@ -182,6 +174,8 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 		/* append the columns required to be searched to the key column array */
 		columns = append(columns, col1)
+	} else {
+		fmt.Printf("Invalid invocation of Query method")
 	}
 
 	model := "InventoryHistory"
