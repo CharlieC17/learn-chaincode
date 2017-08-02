@@ -171,6 +171,7 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		/* append the columns required to be searched to the key column array */
 		columns = append(columns, col1)
 	} else if function == "search_Org" && len(args) == 1 {
+		/* search_Org does not work! -> check definition of the func GetRows in chaincode.go */
 		/* The expected args: The keys ItemId and OrgCode */
 		orgcode := args[0]
 
