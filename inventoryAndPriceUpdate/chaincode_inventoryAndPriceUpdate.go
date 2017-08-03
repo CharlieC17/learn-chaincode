@@ -40,7 +40,7 @@ func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	if function == "createtables" {
 		// Creates tables: InventoryHistory and PriceListHistory
 		t.createInventoryTable(stub, args)
-		t.createPriceListTable(stub, args)
+		//t.createPriceListTable(stub, args)
 		return nil, nil
 	} else if function == "invokeInventory" && len(args) == 3 {
 		// invokeInventory: insert a record into InventoryHistory table
