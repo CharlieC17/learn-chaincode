@@ -155,7 +155,7 @@ func (t *TablesChaincode) invokePriceList(stub shim.ChaincodeStubInterface, args
 	//fmt.Println("Inserting a record to the inventory history table: [%s],[%s],[%s],[%s],[%d]", itemid, orgcode, node, date, qty)
 	fmt.Println("Inserting a record to the inventory history table: ", itemid, orgcode, createts, price)
 
-	ok, err := stub.InsertRow("InventoryHistory", shim.Row{
+	ok, err := stub.InsertRow("PriceListHistory", shim.Row{
 		Columns: []*shim.Column{
 			&shim.Column{Value: &shim.Column_String_{String_: itemid}},
 			&shim.Column{Value: &shim.Column_String_{String_: orgcode}},
