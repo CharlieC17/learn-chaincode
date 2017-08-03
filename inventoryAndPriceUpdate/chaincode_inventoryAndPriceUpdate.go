@@ -40,7 +40,7 @@ func (t *TablesChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	if function == "createtables" {
 		// Creates tables: InventoryHistory and PriceListHistory
 		t.createInventoryTable(stub, args)
-		//t.createPriceListTable(stub, args)
+		t.createPriceListTable(stub, args)
 		return nil, nil
 	} else if function == "invokeInventory" && len(args) == 3 {
 		// invokeInventory: insert a record into InventoryHistory table
@@ -272,9 +272,9 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		outquery = outquery + "["
 		for colscnt < 4 {
 			if colscnt == 3 {
-				currqty := int(rows[rowscnt].Columns[4].GetInt32())
+				currqty := int(rows[rowscnt].Columns[3].GetInt32())
 				outquery = outquery + strconv.Itoa(currqty)
-				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[4].GetInt32())
+				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[3].GetInt32())
 			} else {
 				outquery = outquery + rows[rowscnt].Columns[colscnt].GetString_() + ","
 				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[colscnt].GetString_())
