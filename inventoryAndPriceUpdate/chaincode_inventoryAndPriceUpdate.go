@@ -16,7 +16,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -68,7 +67,7 @@ func (t *TablesChaincode) createInventoryTable(stub shim.ChaincodeStubInterface,
 		&shim.ColumnDefinition{Name: "ItemId", Type: shim.ColumnDefinition_STRING, Key: true},
 		&shim.ColumnDefinition{Name: "OrgCode", Type: shim.ColumnDefinition_STRING, Key: true},
 		&shim.ColumnDefinition{Name: "CreateTS", Type: shim.ColumnDefinition_STRING, Key: true},
-		&shim.ColumnDefinition{Name: "Qty", Type: shim.ColumnDefinition_INT32, Key: false},
+		&shim.ColumnDefinition{Name: "Qty", Type: shim.ColumnDefinition_STRING, Key: false},
 	})
 	if err != nil {
 		return nil, errors.New("Failed creating InventoryHistory table")
@@ -92,7 +91,7 @@ func (t *TablesChaincode) createPriceListTable(stub shim.ChaincodeStubInterface,
 		&shim.ColumnDefinition{Name: "ItemId", Type: shim.ColumnDefinition_STRING, Key: true},
 		&shim.ColumnDefinition{Name: "OrgCode", Type: shim.ColumnDefinition_STRING, Key: true},
 		&shim.ColumnDefinition{Name: "CreateTS", Type: shim.ColumnDefinition_STRING, Key: true},
-		&shim.ColumnDefinition{Name: "Price", Type: shim.ColumnDefinition_INT32, Key: false},
+		&shim.ColumnDefinition{Name: "Price", Type: shim.ColumnDefinition_STRING, Key: false},
 	})
 	if err != nil {
 		return nil, errors.New("Failed creating PriceListHistory table")
@@ -106,12 +105,7 @@ func (t *TablesChaincode) invokeInventory(stub shim.ChaincodeStubInterface, args
 	// the column values to insert a row
 	itemid := args[0]
 	orgcode := args[1]
-	qtyI, errConv := strconv.Atoi(args[2])
-	qty := int32(qtyI)
-	//qty, errConv := strconv.ParseInt(args[4], 10, 32) -> "converted into int64 and not int32"
-	if errConv != nil {
-		fmt.Println("error converting string to int32")
-	}
+	qty := args[2]
 
 	/* Get current timestamp - format: YYYYMMDDhhmmss*/
 	timenow := time.Now()
@@ -125,7 +119,7 @@ func (t *TablesChaincode) invokeInventory(stub shim.ChaincodeStubInterface, args
 			&shim.Column{Value: &shim.Column_String_{String_: itemid}},
 			&shim.Column{Value: &shim.Column_String_{String_: orgcode}},
 			&shim.Column{Value: &shim.Column_String_{String_: createts}},
-			&shim.Column{Value: &shim.Column_Int32{Int32: qty}}},
+			&shim.Column{Value: &shim.Column_String_{String_: qty}}},
 	})
 
 	if !ok && err == nil {
@@ -141,18 +135,12 @@ func (t *TablesChaincode) invokePriceList(stub shim.ChaincodeStubInterface, args
 	// the column values to insert a row
 	itemid := args[0]
 	orgcode := args[1]
-	priceI, errConv := strconv.Atoi(args[2])
-	price := int32(priceI)
-	//qty, errConv := strconv.ParseInt(args[4], 10, 32) -> "converted into int64 and not int32"
-	if errConv != nil {
-		fmt.Println("error converting string to int32")
-	}
+	price := args[2]
 
 	/* Get current timestamp - format: YYYYMMDDhhmmss*/
 	timenow := time.Now()
 	createts := timenow.Format("20060102150405")
 
-	//fmt.Println("Inserting a record to the inventory history table: [%s],[%s],[%s],[%s],[%d]", itemid, orgcode, node, date, qty)
 	fmt.Println("Inserting a record to the inventory history table: ", itemid, orgcode, createts, price)
 
 	ok, err := stub.InsertRow("PriceListHistory", shim.Row{
@@ -160,7 +148,7 @@ func (t *TablesChaincode) invokePriceList(stub shim.ChaincodeStubInterface, args
 			&shim.Column{Value: &shim.Column_String_{String_: itemid}},
 			&shim.Column{Value: &shim.Column_String_{String_: orgcode}},
 			&shim.Column{Value: &shim.Column_String_{String_: createts}},
-			&shim.Column{Value: &shim.Column_Int32{Int32: price}}},
+			&shim.Column{Value: &shim.Column_String_{String_: price}}},
 	})
 
 	if !ok && err == nil {
@@ -271,20 +259,15 @@ func (t *TablesChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		colscnt = 0
 		outquery = outquery + "["
 		for colscnt < 4 {
-			if colscnt == 3 {
-				currqty := int(rows[rowscnt].Columns[3].GetInt32())
-				outquery = outquery + strconv.Itoa(currqty)
-				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[3].GetInt32())
-			} else {
-				outquery = outquery + rows[rowscnt].Columns[colscnt].GetString_() + ","
-				fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[colscnt].GetString_())
-			}
+			outquery = outquery + rows[rowscnt].Columns[colscnt].GetString_() + ","
+			fmt.Println("row[", rowscnt, "]col[", colscnt, "]", rows[rowscnt].Columns[colscnt].GetString_())
+
 			colscnt = colscnt + 1
 		}
 		outquery = outquery + "]"
 		rowscnt = rowscnt + 1
 	}
-	return []byte(fmt.Sprintf("Inventory history: {%s}", outquery)), nil
+	return []byte(fmt.Sprintf("{%s}", outquery)), nil
 }
 
 func main() {
